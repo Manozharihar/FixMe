@@ -17,10 +17,26 @@ const __dirname = path.dirname(__filename);
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
-// Razorpay instance
+// Razorpay configuration
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+
+if (!razorpayKeyId || !razorpayKeySecret) {
+  console.error('❌ Razorpay environment variables missing. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env.');
+  process.exit(1);
+}
+
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+
+if (!razorpayKeyId || !razorpayKeySecret) {
+  console.error('❌ Razorpay environment variables missing. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env.');
+  process.exit(1);
+}
+
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+  key_id: razorpayKeyId,
+  key_secret: razorpayKeySecret,
 });
 
 const expressApp = express();
