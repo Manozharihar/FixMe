@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Wrench, Search, ShoppingCart, User, Activity, Menu, X, LogIn, LogOut } from "lucide-react";
+import { Wrench, Search, ShoppingCart, User, Activity, Menu, X, LogIn, LogOut, MapPin } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { auth, signInWithGoogle } from "../lib/firebase";
 import { onAuthStateChanged, User as FirebaseUser, signOut } from "firebase/auth";
@@ -21,6 +21,7 @@ export function Navbar() {
   const navItems = [
     { name: "Manuals", path: "/guides", icon: Activity },
     { name: "Marketplace", path: "/shop", icon: ShoppingCart },
+    { name: "Locator", path: "/locator", icon: MapPin },
   ];
 
   return (

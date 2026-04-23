@@ -10,10 +10,14 @@ declare global {
 }
 
 function loadRazorpayScript(src: string) {
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) {
+      return resolve();
+    }
     const script = document.createElement("script");
     script.src = src;
-    script.onload = resolve;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Razorpay checkout SDK."));
     document.body.appendChild(script);
   });
 }
@@ -28,10 +32,10 @@ export function Cart() {
   const finalTotalUSD = subtotal + taxAmount + shippingCostUSD;
   
   // Convert to INR (multiply by 80 for rough conversion)
-  const subtotalINR = Math.round(subtotal * 80);
-  const taxAmountINR = Math.round(taxAmount * 80);
-  const shippingCostINR = Math.round(shippingCostUSD * 80);
-  const finalTotalINR = Math.round(finalTotalUSD * 80);
+  let subtotalINR = Math.round(subtotal * 80);
+  let taxAmountINR = Math.round(taxAmount * 80);
+  let shippingCostINR = Math.round(shippingCostUSD * 80);
+  let finalTotalINR = Math.round(finalTotalUSD * 80);
 
   useEffect(() => {
     loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");
@@ -39,6 +43,15 @@ export function Cart() {
 
   async function handleRazorpayCheckout() {
     try {
+      await loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");
+
+      if (typeof window.Razorpay === "undefined") {
+        throw new Error("Razorpay checkout SDK did not load. Please try again.");
+      }
+      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+        throw new Error("Missing public Razorpay key. Set VITE_RAZORPAY_KEY_ID in your .env file.");
+      }
+
       // Create order on backend with calculated amount
       const res = await fetch("/api/create-order", {
         method: "POST",
@@ -121,6 +134,10 @@ export function Cart() {
   }
 
   // Values overridden above to always show 1 rs
+  subtotalINR = 1;
+  taxAmountINR = 0;
+  shippingCostINR = 0;
+  finalTotalINR = 1;
 
   return (
     <div className="pt-32 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:ml-20 min-h-screen">

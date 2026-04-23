@@ -4,6 +4,7 @@ import { Navbar } from "./components/Navbar.tsx";
 import { Hero } from "./components/Hero.tsx";
 import { Cart } from "./components/Cart.tsx";
 import IFixitSearch from "./components/IFixitSearch.tsx";
+import { StoreLocator } from "./components/StoreLocator.tsx";
 import { CartProvider, useCart } from "./context/CartContext";
 import { MOCK_PARTS } from "./constants.ts";
 import { Guide, Part } from "./types.ts";
@@ -534,6 +535,7 @@ export default function App() {
           <Route path="/guides/:id" element={<GuideDetail />} />
           <Route path="/shop" element={<SupplyDepot />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/locator" element={<StoreLocator />} />
         </Routes>
       </Router>
     </CartProvider>
