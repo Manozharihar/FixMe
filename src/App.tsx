@@ -3,97 +3,26 @@ import { BrowserRouter as Router, Routes, Route, useParams } from "react-router-
 import { Navbar } from "./components/Navbar.tsx";
 import { Hero } from "./components/Hero.tsx";
 import { Cart } from "./components/Cart.tsx";
+import { Receipt } from "./components/Receipt.tsx";
 import IFixitSearch from "./components/IFixitSearch.tsx";
 import { StoreLocator } from "./components/StoreLocator.tsx";
 import { CartProvider, useCart } from "./context/CartContext";
-import { MOCK_PARTS } from "./constants.ts";
+import { MOCK_PARTS, MOCK_GUIDES } from "./constants.ts";
 import { Guide, Part } from "./types.ts";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowRight, Wrench, Package, ShieldCheck, Maximize2, ChevronLeft, ChevronRight, PenTool as Tool, Terminal, LogIn } from "lucide-react";
-import { firebaseService } from "./services/firebaseService";
-import { auth, signInWithGoogle } from "./lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
 import { cn } from "./lib/utils";
 
-import firebaseConfig from "../firebase-applet-config.json";
-
 function Home() {
-  const [guides, setGuides] = React.useState<Guide[]>([]);
-  const [parts, setParts] = React.useState<Part[]>([]);
-  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
-
-  React.useEffect(() => {
-    console.log("Initializing App listeners...");
-    const unsubGuides = firebaseService.subscribeGuides((data) => {
-      console.log("Home: Guides updated", data.length);
-      setGuides(data);
-    });
-    const unsubParts = firebaseService.subscribeParts((data) => {
-      console.log("Home: Parts updated", data.length);
-      setParts(data);
-    });
-    
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      console.log("Auth state changed:", user?.email);
-      setCurrentUser(user);
-    });
-
-    return () => {
-      unsubGuides();
-      unsubParts();
-      unsubAuth();
-    };
-  }, []);
-
-  const isAdmin = currentUser?.email === 'mharihar441@gmail.com';
-
-  const handleSeed = async () => {
-    if (!isAdmin) return;
-    try {
-      const res = await fetch("/api/guides");
-      const guidesToSeed = await res.json();
-      await firebaseService.seedDatabase(guidesToSeed, MOCK_PARTS);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const [guides, setGuides] = React.useState<Guide[]>(MOCK_GUIDES);
+  const [parts, setParts] = React.useState<Part[]>(MOCK_PARTS);
 
   return (
     <div className="min-h-screen md:ml-20">
       <Hero />
       
-      {guides.length === 0 && isAdmin ? (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-40 text-center">
-          <div className="brutal-border p-12 bg-zinc-900 border-artistic-accent">
-            <h2 className="text-3xl font-bold mb-4">DATABASE_OFFLINE</h2>
-            <p className="text-zinc-400 mb-2 max-w-md mx-auto">
-              Welcome, Admin. The hardware archive is currently empty or unsynced.
-            </p>
-            {!currentUser && (
-               <p className="text-artistic-accent text-[10px] font-mono mb-4">
-                 [ STATUS: UNAUTHORIZED // PLEASE_SIGN_IN ]
-               </p>
-            )}
-            {currentUser && !isAdmin && (
-               <p className="text-red-500 text-[10px] font-mono mb-4">
-                 [ STATUS: ACCESS_DENIED // ADMIN_ONLY ]
-               </p>
-            )}
-            <p className="font-mono text-[10px] opacity-30 mb-8">
-              ACTIVE_DB: {firebaseConfig.firestoreDatabaseId || '(default)'}
-            </p>
-            <button 
-              onClick={handleSeed}
-              className="px-12 py-4 bg-artistic-accent text-black font-black uppercase tracking-tighter hover:bg-white transition-colors"
-            >
-              [ INITIALIZE_ARCHIVE ]
-            </button>
-          </div>
-        </section>
-      ) : (
-        <>
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-artistic-border">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-artistic-border">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="nav-link">Featured Manuals</h2>
@@ -160,40 +89,20 @@ function Home() {
         </div>
       </section>
 
-      {isAdmin && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-artistic-border">
-          <div className="flex flex-col items-center gap-4">
-            <p className="font-mono text-xs opacity-50">ADMIN_PANEL // DATA_SYNC</p>
-            <button 
-              onClick={handleSeed}
-              className="px-8 py-4 brutal-border bg-artistic-accent text-black font-bold uppercase text-xs hover:bg-white transition-colors"
-            >
-              Sync Mock Data to Firestore
-            </button>
-          </div>
-        </section>
-      )}
-
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-artistic-border mt-20">
         <div className="flex justify-between items-center opacity-30 font-mono text-[10px]">
-          <span>fixMe // SOVEREIGNTY_ARCHIVE</span>
-          <span>© 2024 CORE_SYS</span>
+          <span>Fix Me </span>
+          <span>© 2026 MANOZ HARIHAR</span>
         </div>
       </footer>
-    </>
-  )}
 </div>
   );
 }
 
 function Guides() {
-  const [guides, setGuides] = React.useState<Guide[]>([]);
+  const [guides, setGuides] = React.useState<Guide[]>(MOCK_GUIDES);
   const [filter, setFilter] = React.useState("ALL");
   const [searchQuery, setSearchQuery] = React.useState("");
-
-  React.useEffect(() => {
-    return firebaseService.subscribeGuides(setGuides);
-  }, []);
 
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -271,47 +180,33 @@ function Guides() {
 
 function GuideDetail() {
   const { id } = useParams();
-  const [guide, setGuide] = React.useState<Guide | null>(null);
   const [ifixitGuide, setIfixitGuide] = React.useState<any>(null);
   const [activeStep, setActiveStep] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     if (id) {
-      firebaseService.getGuideById(id).then(async (firebaseGuide) => {
-        setGuide(firebaseGuide);
-        if (firebaseGuide) {
-          await loadIfixitGuide(firebaseGuide.name);
-        }
-      });
+      loadIfixitGuide(id);
     }
   }, [id]);
 
-  const loadIfixitGuide = async (guideName: string) => {
+  const loadIfixitGuide = async (guideId: string) => {
     setLoading(true);
     try {
-      // Search for the guide on iFixit
-      const searchResponse = await fetch(`https://www.ifixit.com/api/2.0/suggest/${encodeURIComponent(guideName)}?doctypes=guide`);
-      const searchData = await searchResponse.json();
-      
-      if (searchData.results && searchData.results.length > 0) {
-        // Load the first matching guide
-        const guideId = searchData.results[0].guideid;
-        const guideResponse = await fetch(`https://www.ifixit.com/api/2.0/guides/${guideId}`);
-        const guideData = await guideResponse.json();
-        setIfixitGuide(guideData);
-      }
+      const guideResponse = await fetch(`https://www.ifixit.com/api/2.0/guides/${guideId}`);
+      const guideData = await guideResponse.json();
+      setIfixitGuide(guideData);
     } catch (error) {
       console.error('Failed to load iFixit guide:', error);
     }
     setLoading(false);
   };
 
-  if (!guide) return <div className="pt-32 text-center font-mono">LOADING_STREAMS...</div>;
+  if (!ifixitGuide && !loading) return <div className="pt-32 text-center font-mono">GUIDE_NOT_FOUND</div>;
+  if (loading) return <div className="pt-32 text-center font-mono">LOADING_STREAMS...</div>;
 
-  // If we have iFixit data, use it for display
-  const displayGuide = ifixitGuide || guide;
-  const steps = ifixitGuide ? ifixitGuide.steps : guide.steps;
+  const displayGuide = ifixitGuide;
+  const steps = ifixitGuide.steps;
 
   return (
     <div className="pt-20 min-h-screen md:ml-20">
@@ -322,18 +217,18 @@ function GuideDetail() {
               <div className="flex items-center gap-4 text-artistic-accent text-[10px] font-mono mb-4 uppercase tracking-widest">
                 <Link to="/guides" className="hover:underline">DIRECTORY</Link>
                 <span>/</span>
-                <span className="text-zinc-500">{guide.device}</span>
+                <span className="text-zinc-500">{displayGuide.type || "DEVICE"}</span>
               </div>
-              <h1 className="text-5xl md:text-7xl font-bold tracking-tighter leading-none">{displayGuide.title || guide.name}</h1>
+              <h1 className="text-5xl md:text-7xl font-bold tracking-tighter leading-none">{displayGuide.title}</h1>
             </div>
             <div className="flex gap-4">
               <div className="brutal-border py-4 px-6 bg-zinc-950">
                 <div className="text-[10px] font-mono opacity-40 uppercase mb-1">SCORE</div>
-                <div className="text-2xl font-bold accent-text">{displayGuide.score || guide.score}/10</div>
+                <div className="text-2xl font-bold accent-text">{displayGuide.difficulty || "MODERATE"}</div>
               </div>
               <div className="brutal-border py-4 px-6 bg-zinc-950">
                 <div className="text-[10px] font-mono opacity-40 uppercase mb-1">DURATION</div>
-                <div className="text-2xl font-bold">{displayGuide.time_required || guide.time}</div>
+                <div className="text-2xl font-bold">{displayGuide.time_required || "1-2 HOURS"}</div>
               </div>
             </div>
           </div>
@@ -341,7 +236,7 @@ function GuideDetail() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-20">
-        {loading && <div className="text-center font-mono mb-8">LOADING_IFIXIT_DATA...</div>}
+        {loading && <div className="text-center font-mono mb-8">LOADING...</div>}
         
         {steps && steps.length > 0 ? (
           <div className="grid lg:grid-cols-12 gap-16">
@@ -378,72 +273,41 @@ function GuideDetail() {
             <div className="lg:col-span-5 relative">
               <div className="sticky top-28 brutal-border bg-zinc-900 p-1">
                 <div className="aspect-[4/5] relative overflow-hidden bg-black">
-                  {ifixitGuide ? (
-                    steps[activeStep].media?.data?.[0]?.standard ? (
-                      <img 
-                        src={steps[activeStep].media.data[0].standard} 
-                        alt={steps[activeStep].title || `Step ${activeStep + 1}`} 
-                        className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-500">
-                        No image available
-                      </div>
-                    )
-                  ) : (
+                  {steps[activeStep].media?.data?.[0]?.standard ? (
                     <img 
-                      src={steps[activeStep].image} 
-                      alt={steps[activeStep].title} 
+                      src={steps[activeStep].media.data[0].standard} 
+                      alt={steps[activeStep].title || `Step ${activeStep + 1}`} 
                       className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                     />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-500">
+                      No image available
+                    </div>
                   )}
                   <div className="absolute top-4 left-4 font-mono text-[10px] bg-black/80 px-2 py-1 brutal-border uppercase">
                     RAW_FEED // {String(activeStep + 1).padStart(3, '0')}
                   </div>
                 </div>
                 <div className="p-8 border-t border-artistic-border">
-                  {ifixitGuide ? (
-                    <div>
-                      {steps[activeStep].lines?.map((line: any, idx: number) => (
-                        <div key={idx} dangerouslySetInnerHTML={{ __html: line.text_rendered }} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-lg font-body text-zinc-300 leading-relaxed italic">
-                       &ldquo;{steps[activeStep].text}&rdquo;
-                    </p>
-                  )}
+                  <div>
+                    {steps[activeStep].lines?.map((line: any, idx: number) => (
+                      <div key={idx} dangerouslySetInnerHTML={{ __html: line.text_rendered }} />
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Requirements - Sidebar Style */}
             <div className="lg:col-span-3 space-y-12">
-              {ifixitGuide?.tools && ifixitGuide.tools.length > 0 && (
+              {displayGuide?.tools && displayGuide.tools.length > 0 && (
                 <div>
                   <h2 className="nav-link mb-6">Tools_Required</h2>
                   <div className="space-y-2">
-                    {ifixitGuide.tools.map((tool: any, idx: number) => (
+                    {displayGuide.tools.map((tool: any, idx: number) => (
                       <div key={idx} className="flex items-center justify-between p-4 brutal-border bg-zinc-950/50 group">
                         <div className="text-xs font-mono uppercase tracking-tight">{tool.text}</div>
                         <span className="text-xs text-zinc-500">x{tool.quantity}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {guide.parts && guide.parts.length > 0 && (
-                <div>
-                  <h2 className="nav-link mb-6">Components_Needed</h2>
-                  <div className="space-y-4">
-                    {guide.parts.map((part, idx) => (
-                      <div key={idx} className="brutal-border p-6 bg-zinc-900 group">
-                        <div className="font-mono text-[10px] opacity-40 mb-2">PART_IDENTIFIER</div>
-                        <div className="text-sm font-bold uppercase mb-6">{part}</div>
-                        <button className="w-full bg-artistic-accent text-black font-bold py-3 uppercase text-[10px] tracking-widest hover:bg-white transition-colors">
-                          FETCH_COMPONENT
-                        </button>
                       </div>
                     ))}
                   </div>
@@ -462,12 +326,8 @@ function GuideDetail() {
 }
 
 function SupplyDepot() {
-  const [parts, setParts] = React.useState<Part[]>([]);
+  const [parts, setParts] = React.useState<Part[]>(MOCK_PARTS);
   const [filter, setFilter] = React.useState("ALL");
-
-  React.useEffect(() => {
-    return firebaseService.subscribeParts(setParts);
-  }, []);
 
   const categories = ["ALL", ...new Set(parts.map(p => p.category))];
   
@@ -550,6 +410,7 @@ export default function App() {
           <Route path="/guides/:id" element={<GuideDetail />} />
           <Route path="/shop" element={<SupplyDepot />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/receipt" element={<Receipt />} />
           <Route path="/locator" element={<StoreLocator />} />
         </Routes>
       </Router>

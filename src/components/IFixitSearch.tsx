@@ -72,7 +72,7 @@ const IFixitSearch: React.FC<{ initialQuery?: string }> = ({ initialQuery }) => 
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-artistic-border">
-      <h2 className="nav-link mb-8">iFixit Repair Guides</h2>
+      <h2 className="nav-link mb-8">Repair Guides</h2>
       
       <div className="mb-8">
         <input

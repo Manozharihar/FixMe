@@ -1,10 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Wrench, Search, ShoppingCart, User, Activity, Menu, X, LogIn, LogOut } from "lucide-react";
+import { ShoppingCart, Activity, Menu, X, LogIn, LogOut } from "lucide-react";
 import { cn } from "@/src/lib/utils";
-import { auth, signInWithGoogle } from "../lib/firebase";
-import { onAuthStateChanged, User as FirebaseUser, signOut } from "firebase/auth";
 import { useCart } from "../context/CartContext";
+import { auth, signInWithGoogle, logOut } from "../lib/firebase";
+import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -13,7 +13,8 @@ export function Navbar() {
   const { items } = useCart();
 
   React.useEffect(() => {
-    return onAuthStateChanged(auth, (u) => setUser(u));
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsubscribe();
   }, []);
 
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -26,8 +27,8 @@ export function Navbar() {
   return (
     <nav className="fixed md:top-0 md:left-0 md:h-screen md:w-20 w-full z-50 bg-black border-r border-artistic-border flex flex-col items-center py-8 gap-12 h-16 md:h-auto">
       <div className="flex items-center md:flex-col w-full px-4 md:px-0 justify-between md:justify-start h-full">
-        <Link to="/" className="text-2xl font-bold tracking-tighter accent-text md:mb-12 lowercase">
-          fixMe
+        <Link to="/" className="text-2xl font-bold tracking-tighter accent-text md:mb-12">
+          Fix Me
         </Link>
 
         {/* Desktop Nav - Vertical Rotated */}
@@ -60,7 +61,7 @@ export function Navbar() {
         <div className="hidden md:flex flex-col items-center gap-6 mt-auto mb-8">
           {user ? (
             <button 
-              onClick={() => signOut(auth)}
+              onClick={logOut}
               className="text-artistic-muted hover:text-artistic-accent transition-colors"
               title={`Sign out ${user.email}`}
             >
@@ -123,10 +124,10 @@ export function Navbar() {
                 </span>
               )}
             </Link>
-            <div className="pt-4 border-t border-artistic-border">
+            <div className="pt-4 border-t border-artistic-border flex flex-col gap-4">
               {user ? (
                 <button 
-                  onClick={() => { signOut(auth); setIsOpen(false); }}
+                  onClick={() => { logOut(); setIsOpen(false); }}
                   className="nav-link text-lg text-artistic-accent flex items-center gap-2"
                 >
                   <LogOut className="w-5 h-5" /> SIGN_OUT

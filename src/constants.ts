@@ -1,10 +1,61 @@
 import { Guide, Part } from "./types";
 
+export const MOCK_GUIDES: Guide[] = [
+  {
+    id: "145677",
+    name: "MacBook Pro 14\" 2021 Battery Replacement",
+    device: "MacBook Pro 14\"",
+    category: "Computers",
+    difficulty: "Difficult",
+    time: "2-3 hours",
+    score: 6,
+    steps: [],
+    tools: ["P5 Pentalobe", "T5 Torx", "Suction Handle"],
+    parts: ["MacBook Pro 14\" Battery"]
+  },
+  {
+    id: "135702",
+    name: "iPhone 12 Screen Replacement",
+    device: "iPhone 12",
+    category: "Mobile",
+    difficulty: "Moderate",
+    time: "1-2 hours",
+    score: 8,
+    steps: [],
+    tools: ["P2 Pentalobe", "Tri-point Y000", "Phillips #000"],
+    parts: ["iPhone 12 Screen Assembly"]
+  },
+  {
+    id: "104033",
+    name: "Nintendo Switch Battery Replacement",
+    device: "Nintendo Switch",
+    category: "Consoles",
+    difficulty: "Easy",
+    time: "30-45 minutes",
+    score: 9,
+    steps: [],
+    tools: ["JIS 000", "Phillips #00", "Spudger"],
+    parts: ["Switch Replacement Battery"]
+  },
+  {
+    id: "149254",
+    name: "Steam Deck SSD Replacement",
+    device: "Steam Deck",
+    category: "Consoles",
+    difficulty: "Moderate",
+    time: "20-30 minutes",
+    score: 9,
+    steps: [],
+    tools: ["Phillips #1", "Tweezers", "Spudger"],
+    parts: ["M.2 2230 NVMe SSD"]
+  }
+];
+
 export const MOCK_PARTS: Part[] = [
   {
     id: "p1",
     name: "MacBook Pro 13\" (A2338) Battery",
-    price: 0.0125,
+    price: 100.00,
     image: "61cILglrAeL.jpg?w=400",
     category: "Mobile & Electronics",
     compatibility: ["MacBook Pro 13\" M1", "MacBook Pro 13\" M2"],
@@ -14,8 +65,8 @@ export const MOCK_PARTS: Part[] = [
   {
     id: "p2",
     name: "Mahindra Air Filter Assembly",
-    price: 0.012,
-    image: "https://images.unsplash.com/photo-1599933310633-2fc025fe2b88?w=400",
+    price: 95.00,
+    image: "https://m.media-amazon.com/images/I/314qVeZGJjL._SX425_.jpg?w=400",
     category: "Farming Equipment",
     compatibility: ["Mahindra OJA Series", "Mahindra Jivo"],
     inStock: true,
@@ -25,7 +76,7 @@ export const MOCK_PARTS: Part[] = [
     id: "p3",
     name: "S22 Ultra OLED Screen Assembly",
     price: 245.00,
-    image: "https://images.unsplash.com/photo-1616422285623-13ff0167c95c?w=400",
+    image: "https://tse3.mm.bing.net/th/id/OIP.C8kyUjFdPFFIVHq3vSorxQHaHa?w=400",
     category: "Mobile & Electronics",
     compatibility: ["Galaxy S22 Ultra (India Version)"],
     inStock: true,
@@ -35,7 +86,7 @@ export const MOCK_PARTS: Part[] = [
     id: "p4",
     name: "Kent RO Membrane 75 GPD",
     price: 32.00,
-    image: "https://images.unsplash.com/photo-1581092160192-726f60817b11?w=400",
+    image: "https://m.media-amazon.com/images/I/716ltPYgDAL._SY879_.jpg?w=400",
     category: "Consumer Durables",
     compatibility: ["Kent Grand", "Kent Pearl", "Active Copper"],
     inStock: true,
@@ -45,7 +96,7 @@ export const MOCK_PARTS: Part[] = [
     id: "p5",
     name: "Hero Splendor Brake Shoe",
     price: 4.50,
-    image: "https://images.unsplash.com/photo-1485908953470-6ddb99184149?w=400",
+    image: "https://5.imimg.com/data5/SELLER/Default/2021/4/FO/TE/NN/119107773/hero-splendor-brake-shoe-1000x1000.jpg?w=400",
     category: "Automobile Equipment",
     compatibility: ["Hero Splendor", "Hero Passion"],
     inStock: true,

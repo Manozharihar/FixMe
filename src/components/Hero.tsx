@@ -74,7 +74,7 @@ export function Hero() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Search iFixit repair guides..."
+                placeholder="Search repair guides..."
                 className="w-full p-4 pr-12 bg-zinc-900 border border-artistic-border text-white placeholder-zinc-500 focus:border-artistic-accent outline-none"
               />
               <button
@@ -84,7 +84,7 @@ export function Hero() {
                 <Search className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-zinc-500 mt-2 font-mono uppercase">iFixit Repair Guides</p>
+            <p className="text-xs text-zinc-500 mt-2 font-mono uppercase"></p>
             <button
               onClick={handleBrowseCategories}
               disabled={loading}

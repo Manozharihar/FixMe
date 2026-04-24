@@ -1,12 +1,7 @@
-import React, { useEffect, useState } from "react";
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Trash2, Plus, Minus, ArrowRight, ShoppingCart, CheckCircle, Download, Printer, ArrowLeft, CreditCard } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Trash2, Plus, Minus, ArrowRight, ShoppingCart } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import { firebaseService } from "../services/firebaseService";
-import { auth, signInWithGoogle } from "../lib/firebase";
-import { auth } from "../lib/firebase";
 
 declare global {
   interface Window {
@@ -29,7 +24,7 @@ function loadRazorpayScript(src: string) {
 
 export function Cart() {
   const { items, removeFromCart, updateQuantity, clearCart } = useCart();
-  const [receiptData, setReceiptData] = useState<any>(null);
+  const navigate = useNavigate();
   
   // Calculate actual totals
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -48,21 +43,6 @@ export function Cart() {
   }, []);
 
   async function handleRazorpayCheckout() {
-    if (!auth.currentUser) {
-      const confirmSignIn = window.confirm("You must be logged in to place an order. Do you want to sign in now?");
-      if (confirmSignIn) {
-        try {
-          await signInWithGoogle();
-        } catch (err) {
-          console.error("Sign-in error:", err);
-          alert("Failed to sign in. Please try again.");
-          return;
-        }
-      } else {
-        return;
-      }
-    }
-
     try {
       await loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");
 
@@ -101,34 +81,32 @@ export function Cart() {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-              receiptEmail: auth.currentUser?.email,
+              receiptEmail: "guest",
               amount: data.amount,
             }),
           });
           const verifyData = await verifyRes.json();
           if (verifyData.success) {
-            const userEmail = auth.currentUser?.email;
-            if (userEmail) {
-              const receiptInfo = {
+            try {
+              // Generate Receipt
+              const receiptData = {
                 orderId: response.razorpay_order_id,
                 paymentId: response.razorpay_payment_id,
                 amount: data.amount,
-                items: items.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price }))
+                currency: data.currency || "INR",
+                status: "paid",
+                customerEmail: "guest",
+                items: items,
+                createdAt: new Date().toISOString(),
+                paymentMethod: "Razorpay Checkout",
               };
-              
-              try {
-                await firebaseService.saveReceiptAndSendEmail(receiptInfo, userEmail);
-                setReceiptData({ ...receiptInfo, email: userEmail });
-              } catch (err) {
-                console.error("Failed to send receipt:", err);
-                alert("Payment successful, but failed to send receipt email.");
-                setReceiptData({ ...receiptInfo, email: userEmail });
-              }
-            } else {
-              alert("Payment successful! Your repair kit is ready.");
+              console.log("✅ Receipt generated");
+
+              clearCart(); // Clear cart after successful payment
+              navigate('/receipt', { state: { receiptData } });
+            } catch (error) {
+              console.error("❌ Error generating receipt:", error);
             }
-            alert("Payment successful! Your repair kit is ready.");
-            clearCart(); // Clear cart after successful payment
           } else {
             alert("Payment verification failed: " + (verifyData.error || "Unknown error"));
           }
@@ -137,9 +115,6 @@ export function Cart() {
           ondismiss: function () {
             alert("Payment cancelled. You can try again anytime.");
           },
-        },
-        prefill: {
-          email: auth.currentUser?.email || ""
         },
         prefill: {},
         theme: { color: "#FF4D00" }, // Match the accent color
@@ -152,118 +127,6 @@ export function Cart() {
     } catch (err: any) {
       alert("Error: " + (err.message || "Unknown error"));
     }
-  }
-
-  if (receiptData) {
-    const formattedDate = new Date().toLocaleString('en-IN', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short'
-    });
-
-    const subtotalCost = Math.round((receiptData.amount / 100) * 80 / 1.18);
-    const taxAmount = Math.round(subtotalCost * 0.18);
-
-    return (
-      <div className="pt-32 pb-32 flex flex-col items-center px-4 min-h-screen font-mono">
-        <div className="w-full max-w-[520px] bg-white text-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-lg overflow-hidden border border-zinc-200 relative">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-artistic-accent"></div>
-          
-          <div className="p-8 flex flex-col items-center text-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="text-green-600" size={28} />
-            </div>
-            <h1 className="text-xl font-bold mb-1">Payment Successful</h1>
-            <p className="text-sm text-zinc-500">Transaction ID: {receiptData.paymentId}</p>
-          </div>
-
-          <div className="px-8 pb-6 text-center">
-            <div className="text-4xl font-bold mb-2">₹{(receiptData.amount / 100).toLocaleString('en-IN')}</div>
-            <div className="inline-flex items-center px-3 py-1 bg-zinc-100 text-zinc-600 text-xs font-bold rounded-full tracking-wider">
-              PAID VIA RAZORPAY
-            </div>
-          </div>
-
-          <div className="px-8">
-            <div className="h-[1px] bg-zinc-200 w-full mb-6"></div>
-          </div>
-
-          <div className="px-8 space-y-3 mb-6 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500 font-semibold text-xs tracking-wider">DATE & TIME</span>
-              <span className="font-medium">{formattedDate}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500 font-semibold text-xs tracking-wider">EMAIL</span>
-              <span className="font-medium">{receiptData.email}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500 font-semibold text-xs tracking-wider">RAZORPAY ORDER ID</span>
-              <span className="font-medium">{receiptData.orderId}</span>
-            </div>
-          </div>
-
-          <div className="px-8 mb-6">
-            <div className="bg-zinc-50 rounded-xl p-4 space-y-3 text-sm">
-              <h3 className="text-xs font-bold text-zinc-500 mb-2 tracking-wider">BILLING DETAILS</h3>
-              
-              {receiptData.items.map((item: any) => (
-                <div key={item.id} className="flex justify-between font-medium">
-                  <span className="text-zinc-600">{item.quantity}x {item.name}</span>
-                  <span>₹{Math.round(item.price * item.quantity * 80).toLocaleString('en-IN')}</span>
-                </div>
-              ))}
-              
-              <div className="pt-2 mt-2 border-t border-zinc-200 border-dashed"></div>
-              
-              <div className="flex justify-between font-medium">
-                <span className="text-zinc-600">Subtotal</span>
-                <span>₹{subtotalCost.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between font-medium">
-                <span className="text-zinc-600">IGST (18%)</span>
-                <span>₹{taxAmount.toLocaleString('en-IN')}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-8">
-            <div className="border-t border-dashed border-zinc-300 w-full mb-6"></div>
-          </div>
-
-          <div className="px-8 pb-8">
-            <div className="flex justify-between items-baseline">
-              <span className="text-lg font-bold">Total Amount Paid</span>
-              <span className="text-2xl font-bold">₹{(receiptData.amount / 100).toLocaleString('en-IN')}</span>
-            </div>
-            <div className="mt-4 flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg border border-green-100 text-xs font-medium">
-              <CheckCircle size={16} />
-              <span>Secured by Repair_Kit & Razorpay 256-bit Encryption</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-col md:flex-row gap-4 w-full max-w-[520px]">
-          <button 
-            onClick={() => window.print()}
-            className="flex-1 bg-zinc-900 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-zinc-800 transition-colors"
-          >
-            Print Receipt
-          </button>
-          
-          <Link
-            to="/shop"
-            className="flex-1 bg-white border border-zinc-200 text-zinc-900 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-zinc-50 transition-colors"
-            onClick={() => setReceiptData(null)}
-          >
-            Continue Shopping
-          </Link>
-        </div>
-      </div>
-    );
   }
 
   if (items.length === 0) {

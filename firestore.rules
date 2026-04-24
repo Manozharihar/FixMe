@@ -63,5 +63,11 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if false; // Only manageable via console
     }
+
+    match /receipts/{receiptId} {
+      allow create: if true;
+      allow read: if isAdmin() || (isSignedIn() && request.auth.token.email == resource.data.customerEmail);
+      allow update, delete: if isAdmin();
+    }
   }
 }

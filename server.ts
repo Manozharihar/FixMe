@@ -8,6 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, doc, getDoc } from "firebase/firestore";
+import nodemailer from "nodemailer";
 import firebaseConfig from "./firebase-applet-config.json" assert { type: "json" };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,6 +30,15 @@ if (!razorpayKeyId || !razorpayKeySecret) {
 const razorpay = new Razorpay({
   key_id: razorpayKeyId,
   key_secret: razorpayKeySecret,
+});
+
+// Configure nodemailer
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
 });
 
 const expressApp = express();
@@ -81,8 +91,8 @@ expressApp.post("/api/create-order", async (req, res) => {
 });
 
 // Verify Razorpay Payment Signature
-expressApp.post("/api/verify-payment", (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+expressApp.post("/api/verify-payment", async (req, res) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, receiptEmail, amount } = req.body;
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
     return res.status(400).json({ error: "Missing payment fields" });
   }
@@ -92,6 +102,28 @@ expressApp.post("/api/verify-payment", (req, res) => {
     .update(body)
     .digest("hex");
   if (expectedSignature === razorpay_signature) {
+    // Send confirmation email
+    if (receiptEmail && process.env.SMTP_USER) {
+      try {
+        await transporter.sendMail({
+          from: `"Fix Me Repair Kits" <${process.env.SMTP_USER}>`,
+          to: receiptEmail,
+          subject: "Your Repair Kit Order Confirmation",
+          text: `Thank you for your order!\n\nOrder ID: ${razorpay_order_id}\nPayment ID: ${razorpay_payment_id}\nTotal Amount: ₹${amount / 100}\n\nYour parts are being prepared for shipment.`,
+          html: `
+            <h2>Thank you for your order!</h2>
+            <p>Order ID: <strong>${razorpay_order_id}</strong></p>
+            <p>Payment ID: <strong>${razorpay_payment_id}</strong></p>
+            <p>Total Amount: <strong>₹${amount / 100}</strong></p>
+            <p>Your parts are being prepared for shipment.</p>
+          `
+        });
+        console.log(`✅ Order confirmation email sent to ${receiptEmail}`);
+      } catch (error) {
+        console.error("❌ Failed to send confirmation email:", error);
+      }
+    }
+
     return res.json({ success: true });
   } else {
     return res.status(400).json({ error: "Signature mismatch" });
