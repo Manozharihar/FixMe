@@ -22,11 +22,13 @@ const IFixitSearch: React.FC<{ initialQuery?: string }> = ({ initialQuery }) => 
   const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const API_BASE = import.meta.env.VITE_API_URL || "";
+
   const searchGuides = async () => {
     if (!query) return;
     setLoading(true);
     try {
-      const response = await fetch(`https://www.ifixit.com/api/2.0/suggest/${encodeURIComponent(query)}?doctypes=guide`);
+      const response = await fetch(`${API_BASE}/api/ifixit-search?q=${encodeURIComponent(query)}`);
       const data = await response.json();
       setResults(data.results || []);
     } catch (error) {
@@ -44,7 +46,7 @@ const IFixitSearch: React.FC<{ initialQuery?: string }> = ({ initialQuery }) => 
   const loadCategories = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://www.ifixit.com/api/2.0/categories');
+      const response = await fetch(`${API_BASE}/api/ifixit-categories`);
       const data = await response.json();
       setCategories(Object.keys(data));
     } catch (error) {
@@ -56,7 +58,7 @@ const IFixitSearch: React.FC<{ initialQuery?: string }> = ({ initialQuery }) => 
   const loadGuide = async (guideId: number) => {
     setLoading(true);
     try {
-      const response = await fetch(`https://www.ifixit.com/api/2.0/guides/${guideId}`);
+      const response = await fetch(`${API_BASE}/api/ifixit-guide?id=${guideId}`);
       const guide = await response.json();
       setSelectedGuide(guide);
     } catch (error) {
