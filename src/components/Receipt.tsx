@@ -37,7 +37,7 @@ export function Receipt() {
 
     try {
       const html2pdfModule = await import('html2pdf.js');
-      const html2pdf = html2pdfModule.default || html2pdfModule;
+      const html2pdf = (html2pdfModule as any).default || html2pdfModule;
 
       const opt = {
         margin: 0.5,
