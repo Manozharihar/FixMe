@@ -1,13 +1,11 @@
 import dotenv from "dotenv";
-import fs from "fs";
 import Razorpay from "razorpay";
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import firebaseConfig from "../firebase-applet-config.json" assert { type: "json" };
 
 dotenv.config();
 
-const configFile = new URL("../firebase-applet-config.json", import.meta.url);
-const firebaseConfig = JSON.parse(fs.readFileSync(configFile, "utf8"));
 const firebaseApp = initializeApp(firebaseConfig);
 
 export const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
@@ -24,6 +22,8 @@ export function sendJson(res: any, status: number, payload: any) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.end(JSON.stringify(payload));
 }
 

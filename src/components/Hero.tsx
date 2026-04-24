@@ -24,7 +24,8 @@ export function Hero() {
   const handleBrowseCategories = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://www.ifixit.com/api/2.0/categories');
+      const API_BASE = import.meta.env.VITE_API_URL || "";
+      const response = await fetch(`${API_BASE}/api/ifixit-categories`);
       const data = await response.json();
       const categoryNames = Object.keys(data);
       setCategories(categoryNames);

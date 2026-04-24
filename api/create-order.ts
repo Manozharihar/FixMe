@@ -1,6 +1,9 @@
 import { razorpay, hasRazorpayConfig, parseJsonBody, sendError, sendJson } from "./_config";
 
 export default async function handler(req: any, res: any) {
+  if (req.method === "OPTIONS") {
+    return sendJson(res, 200, { success: true });
+  }
   if (req.method !== "POST") {
     return sendError(res, 405, "Method not allowed");
   }
