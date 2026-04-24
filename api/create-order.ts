@@ -1,4 +1,4 @@
-import { razorpay, hasRazorpayConfig, parseJsonBody, sendError, sendJson } from "./_config";
+import { razorpay, hasRazorpayConfig, parseJsonBody, sendError, sendJson } from "./_config.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {

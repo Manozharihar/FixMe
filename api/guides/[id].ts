@@ -1,5 +1,5 @@
 import { doc, getDoc } from "firebase/firestore";
-import { db, sendError, sendJson } from "../_config";
+import { db, sendError, sendJson } from "../_config.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "GET") {

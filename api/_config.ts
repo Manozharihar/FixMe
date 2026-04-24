@@ -2,9 +2,19 @@ import dotenv from "dotenv";
 import Razorpay from "razorpay";
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import firebaseConfig from "../firebase-applet-config.json" assert { type: "json" };
 
 dotenv.config();
+
+const firebaseConfig = {
+  projectId: "manoz-ee0cf",
+  appId: "1:74997948635:web:aa5a6e52ca80aede20ecfe",
+  apiKey: "AIzaSyCMAaToMbL4-lh2LqumbKdqkFv9VefW550",
+  authDomain: "manoz-ee0cf.firebaseapp.com",
+  firestoreDatabaseId: "ai-studio-e320eb9e-a432-4ee8-bc7e-195095e8ed5d",
+  storageBucket: "manoz-ee0cf.firebasestorage.app",
+  messagingSenderId: "74997948635",
+  measurementId: ""
+};
 
 const firebaseApp = initializeApp(firebaseConfig);
 
