@@ -6,7 +6,8 @@ import {
   setDoc, 
   onSnapshot,
   query,
-  FirestoreError 
+  FirestoreError,
+  addDoc
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { Guide, Part } from '../types';
@@ -114,6 +115,32 @@ export const firebaseService = {
       }
     } catch (error) {
       return handleFirestoreError(error as FirestoreError, 'write', 'multiple');
+    }
+  },
+
+  async saveReceiptAndSendEmail(receiptData: any, emailAddress: string) {
+    try {
+      // Save receipt
+      const receiptRef = await addDoc(collection(db, 'receipts'), {
+        ...receiptData,
+        email: emailAddress,
+        createdAt: new Date().toISOString()
+      });
+
+      // Send email via Trigger Email extension
+      await addDoc(collection(db, 'mail'), {
+        to: emailAddress,
+        message: {
+          subject: 'Your Receipt from REPAIR_KIT',
+          text: `Thank you for your purchase!\n\nYour order ID is ${receiptData.orderId}.\nTotal: ₹${receiptData.amount / 100}`,
+          html: `<p>Thank you for your purchase!</p><p>Your order ID is <strong>${receiptData.orderId}</strong>.</p><p>Total: ₹${receiptData.amount / 100}</p>`
+        }
+      });
+
+      return receiptRef.id;
+    } catch (error) {
+      console.error("Error saving receipt and sending email:", error);
+      throw error;
     }
   }
 };

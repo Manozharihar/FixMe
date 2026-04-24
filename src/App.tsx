@@ -160,8 +160,6 @@ function Home() {
         </div>
       </section>
 
-      <IFixitSearch />
-
       {isAdmin && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-artistic-border">
           <div className="flex flex-col items-center gap-4">
@@ -191,9 +189,18 @@ function Home() {
 function Guides() {
   const [guides, setGuides] = React.useState<Guide[]>([]);
   const [filter, setFilter] = React.useState("ALL");
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   React.useEffect(() => {
     return firebaseService.subscribeGuides(setGuides);
+  }, []);
+
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const search = urlParams.get('search');
+    if (search) {
+      setSearchQuery(search);
+    }
   }, []);
 
   const categories = ["ALL", ...new Set(guides.map(g => g.category))];
@@ -201,6 +208,14 @@ function Guides() {
   const filteredGuides = filter === "ALL" 
     ? guides 
     : guides.filter(g => g.category === filter);
+
+  if (searchQuery) {
+    return (
+      <div className="pt-32 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:ml-20">
+        <IFixitSearch initialQuery={searchQuery} />
+      </div>
+    );
+  }
 
   return (
     <div className="pt-32 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:ml-20">

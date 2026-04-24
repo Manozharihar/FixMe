@@ -15,8 +15,8 @@ interface Guide {
   }[];
 }
 
-const IFixitSearch: React.FC = () => {
-  const [query, setQuery] = useState('');
+const IFixitSearch: React.FC<{ initialQuery?: string }> = ({ initialQuery }) => {
+  const [query, setQuery] = useState(initialQuery || '');
   const [results, setResults] = useState<Guide[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
@@ -34,6 +34,12 @@ const IFixitSearch: React.FC = () => {
     }
     setLoading(false);
   };
+
+  React.useEffect(() => {
+    if (initialQuery) {
+      searchGuides();
+    }
+  }, [initialQuery]);
 
   const loadCategories = async () => {
     setLoading(true);

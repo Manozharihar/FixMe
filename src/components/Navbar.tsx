@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Wrench, Search, ShoppingCart, User, Activity, Menu, X, LogIn, LogOut, MapPin } from "lucide-react";
+import { Wrench, Search, ShoppingCart, User, Activity, Menu, X, LogIn, LogOut } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { auth, signInWithGoogle } from "../lib/firebase";
 import { onAuthStateChanged, User as FirebaseUser, signOut } from "firebase/auth";
@@ -21,7 +21,6 @@ export function Navbar() {
   const navItems = [
     { name: "Manuals", path: "/guides", icon: Activity },
     { name: "Marketplace", path: "/shop", icon: ShoppingCart },
-    { name: "Locator", path: "/locator", icon: MapPin },
   ];
 
   return (
@@ -45,25 +44,6 @@ export function Navbar() {
               {item.name}
             </Link>
           ))}
-        </div>
-
-        {/* Desktop Cart Icon */}
-        <div className="hidden md:flex">
-          <Link 
-            to="/cart" 
-            className={cn(
-              "relative transition-colors",
-              location.pathname === "/cart" ? "text-artistic-accent" : "text-artistic-muted hover:text-artistic-accent"
-            )}
-            title={`Shopping cart (${cartCount} items)`}
-          >
-            <ShoppingCart className="w-5 h-5" />
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-artistic-accent text-black text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Link>
         </div>
 
         {/* Mobile menu toggle */}
@@ -95,6 +75,21 @@ export function Navbar() {
               <LogIn className="w-5 h-5" />
             </button>
           )}
+          <Link
+            to="/cart"
+            className={cn(
+              "relative transition-colors",
+              location.pathname === "/cart" ? "text-artistic-accent" : "text-artistic-muted hover:text-artistic-accent"
+            )}
+            title={`Shopping cart (${cartCount} items)`}
+          >
+            <ShoppingCart className="w-5 h-5" />
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-artistic-accent text-black text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </Link>
           <div className="font-mono text-[10px] opacity-30 -rotate-90 origin-center">
             v2.04
           </div>
