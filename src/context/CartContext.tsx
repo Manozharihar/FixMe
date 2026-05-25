@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Part } from "../types";
 
 export interface CartItem extends Part {
@@ -18,6 +18,10 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+
+  useEffect(() => {
+    setItems([]);
+  }, []);
 
   const addToCart = (part: Part, quantity = 1) => {
     setItems((prev) => {

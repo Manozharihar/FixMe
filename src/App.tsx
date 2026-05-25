@@ -6,6 +6,7 @@ import { Cart } from "./components/Cart.tsx";
 import { Receipt } from "./components/Receipt.tsx";
 import IFixitSearch from "./components/IFixitSearch.tsx";
 import { StoreLocator } from "./components/StoreLocator.tsx";
+import { PrivacyPolicy } from "./components/PrivacyPolicy.tsx";
 import { CartProvider, useCart } from "./context/CartContext";
 import { MOCK_PARTS, MOCK_GUIDES } from "./constants.ts";
 import { Guide, Part } from "./types.ts";
@@ -90,9 +91,14 @@ function Home() {
       </section>
 
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-artistic-border mt-20">
-        <div className="flex justify-between items-center opacity-30 font-mono text-[10px]">
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center opacity-30 font-mono text-[10px]">
           <span>Fix Me </span>
-          <span>© 2026 MANOZ HARIHAR</span>
+          <div className="flex items-center gap-4">
+            <Link to="/privacy-policy" className="hover:text-artistic-accent transition-colors">
+              PRIVACY_POLICY
+            </Link>
+            <span>© 2026 MANOZ HARIHAR</span>
+          </div>
         </div>
       </footer>
 </div>
@@ -411,6 +417,7 @@ export default function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/receipt" element={<Receipt />} />
           <Route path="/locator" element={<StoreLocator />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         </Routes>
       </Router>
     </CartProvider>

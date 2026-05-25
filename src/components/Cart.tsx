@@ -1,308 +1,109 @@
-import React, { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Trash2, Plus, Minus, ArrowRight, ShoppingCart } from "lucide-react";
+import React from "react";
+import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
-
-function loadRazorpayScript(src: string) {
-  return new Promise<void>((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      return resolve();
-    }
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load Razorpay checkout SDK."));
-    document.body.appendChild(script);
-  });
-}
-
 export function Cart() {
-  const { items, removeFromCart, updateQuantity, clearCart } = useCart();
-  const navigate = useNavigate();
-  
-  // Calculate actual totals
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const taxAmount = subtotal * 0.18; // 18% GST
-  const shippingCostUSD = subtotal > 12.5 ? 0 : 2.5; // Free shipping over ₹1000
-  const finalTotalUSD = subtotal + taxAmount + shippingCostUSD;
-  
-  // Convert to INR (multiply by 80 for rough conversion)
-  let subtotalINR = Math.round(subtotal * 80);
-  let taxAmountINR = Math.round(taxAmount * 80);
-  let shippingCostINR = Math.round(shippingCostUSD * 80);
-  let finalTotalINR = Math.round(finalTotalUSD * 80);
-
-  useEffect(() => {
-    loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");
-  }, []);
-
-  async function handleRazorpayCheckout() {
-    try {
-      await loadRazorpayScript("https://checkout.razorpay.com/v1/checkout.js");
-
-      if (typeof window.Razorpay === "undefined") {
-        throw new Error("Razorpay checkout SDK did not load. Please try again.");
-      }
-      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
-        throw new Error("Missing public Razorpay key. Set VITE_RAZORPAY_KEY_ID in your .env file.");
-      }
-
-      const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-      // Create order on backend with calculated amount
-      const res = await fetch(`${API_BASE}/api/create-order`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          amount: finalTotalINR * 100, // Convert to paise
-          currency: "INR" 
-        }),
-      });
-
-      if (!res.ok) {
-        let errorMessage = `Server returned ${res.status}.`;
-        try {
-          const errData = await res.json();
-          errorMessage = errData.error || errorMessage;
-        } catch (e) {
-          // Fallback if the server didn't return JSON
-        }
-        throw new Error(errorMessage);
-      }
-
-      const data = await res.json();
-      if (!data.order_id) throw new Error(data.error || "Order creation failed");
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: data.amount,
-        currency: data.currency,
-        order_id: data.order_id,
-        name: "Repair Kit Checkout",
-        description: `Payment for ${items.length} repair part${items.length > 1 ? 's' : ''}`,
-        handler: async function (response: any) {
-          // Verify payment signature
-          const verifyRes = await fetch(`${API_BASE}/api/verify-payment`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              receiptEmail: "guest",
-              amount: data.amount,
-            }),
-          });
-
-          if (!verifyRes.ok) {
-             throw new Error(`Payment verification failed (Server returned ${verifyRes.status}).`);
-          }
-
-          const verifyData = await verifyRes.json();
-          if (verifyData.success) {
-            try {
-              // Generate Receipt
-              const receiptData = {
-                orderId: response.razorpay_order_id,
-                paymentId: response.razorpay_payment_id,
-                amount: data.amount,
-                currency: data.currency || "INR",
-                status: "paid",
-                customerEmail: "guest",
-                items: items,
-                createdAt: new Date().toISOString(),
-                paymentMethod: "Razorpay Checkout",
-              };
-              console.log("✅ Receipt generated");
-
-              clearCart(); // Clear cart after successful payment
-              navigate('/receipt', { state: { receiptData } });
-            } catch (error) {
-              console.error("❌ Error generating receipt:", error);
-            }
-          } else {
-            alert("Payment verification failed: " + (verifyData.error || "Unknown error"));
-          }
-        },
-        modal: {
-          ondismiss: function () {
-            alert("Payment cancelled. You can try again anytime.");
-          },
-        },
-        prefill: {},
-        theme: { color: "#FF4D00" }, // Match the accent color
-      };
-      const rzp = new window.Razorpay(options);
-      rzp.on("payment.failed", function (response: any) {
-        alert("Payment failed: " + response.error.description);
-      });
-      rzp.open();
-    } catch (err: any) {
-      alert("Error: " + (err.message || "Unknown error"));
-    }
-  }
-
-  if (items.length === 0) {
-    return (
-      <div className="pt-32 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:ml-48 min-h-screen">
-        <h1 className="text-4xl font-heading mb-4 accent-text">REPAIR_KIT</h1>
-        <p className="text-blueprint-muted font-mono text-sm max-w-2xl uppercase opacity-50 mb-16">
-          SHOPPING_CART // CHECKOUT_SYSTEM
-        </p>
-
-        <div className="flex flex-col items-center justify-center py-20">
-          <ShoppingCart size={64} className="opacity-30 mb-8" />
-          <h2 className="text-2xl font-bold mb-4 text-center">CART_EMPTY</h2>
-          <p className="text-zinc-500 mb-8 text-center max-w-md">
-            No parts in your repair kit. Explore the marketplace to add components.
-          </p>
-          <Link
-            to="/shop"
-            className="px-12 py-4 bg-artistic-accent text-black font-black uppercase tracking-tighter hover:bg-white transition-colors flex items-center gap-2"
-          >
-            Continue Shopping <ArrowRight size={16} />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // Values overridden above to always show 1 rs
-  subtotalINR = 1;
-  taxAmountINR = 0;
-  shippingCostINR = 0;
-  finalTotalINR = 1;
+  const { items, total, updateQuantity, removeFromCart, clearCart } = useCart();
 
   return (
-    <div className="pt-32 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:ml-48 min-h-screen">
-      <h1 className="text-4xl font-heading mb-4 accent-text">REPAIR_KIT</h1>
-      <p className="text-blueprint-muted font-mono text-sm max-w-2xl uppercase opacity-50 mb-8">
-        SHOPPING_CART // CHECKOUT_SYSTEM
-      </p>
+    <div className="min-h-screen md:ml-48">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="mb-10">
+          <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-artistic-accent mb-4">
+            Repair Kit
+          </p>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-none mb-3">
+            Cart
+          </h1>
+          <p className="text-zinc-300">
+            Review your selected parts and continue to checkout when ready.
+          </p>
+        </div>
 
-      <div className="grid lg:grid-cols-3 gap-12">
-        {/* Cart Items */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="border border-artistic-border">
-            {items.map((item, index) => (
-              <div
-                key={item.id}
-                className={`p-6 flex gap-6 group ${
-                  index !== items.length - 1 ? "border-b border-artistic-border" : ""
-                }`}
-              >
-                <div className="w-24 h-24 flex-shrink-0 bg-zinc-900 border border-artistic-border overflow-hidden">
+        {items.length === 0 ? (
+          <div className="border border-artistic-border bg-zinc-950/60 p-8">
+            <p className="text-zinc-200 mb-6">Your cart is empty right now.</p>
+            <Link
+              to="/shop"
+              className="inline-flex items-center justify-center bg-artistic-accent text-black px-4 py-2 font-bold uppercase text-[10px] tracking-widest"
+            >
+              Browse parts
+            </Link>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-[2fr_1fr] gap-8">
+            <div className="space-y-4">
+              {items.map((item) => (
+                <div key={item.id} className="border border-artistic-border bg-zinc-950/60 p-4 flex flex-col sm:flex-row gap-4">
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-full h-full object-cover grayscale opacity-50 group-hover:opacity-100 group-hover:grayscale-0 transition-all"
+                    className="w-full sm:w-32 h-32 object-cover grayscale border border-artistic-border"
                   />
-                </div>
-
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg mb-2">{item.name}</h3>
-                  <p className="text-sm text-zinc-500 mb-4 font-body italic">
-                    {item.category} • Compatibility: {item.compatibility.length} models
-                  </p>
-                  <div className="text-xl font-bold accent-text">₹{Math.round(item.price * 80).toLocaleString('en-IN')}</div>
-                </div>
-
-                <div className="flex flex-col items-end justify-between">
-                  <button
-                    onClick={() => removeFromCart(item.id)}
-                    className="text-red-500 hover:text-red-400 transition-colors"
-                    title="Remove from cart"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-
-                  <div className="flex items-center gap-2 border border-artistic-border">
-                    <button
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="p-2 hover:bg-zinc-900 transition-colors"
-                      title="Decrease quantity"
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <span className="px-4 font-bold text-center w-16">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="p-2 hover:bg-zinc-900 transition-colors"
-                      title="Increase quantity"
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-
-                  <div className="text-lg font-bold">
-                    ₹{Math.round(item.price * item.quantity * 80).toLocaleString('en-IN')}
+                  <div className="flex-1">
+                    <div className="flex justify-between gap-4">
+                      <div>
+                        <h2 className="text-lg font-semibold">{item.name}</h2>
+                        <p className="text-xs uppercase tracking-widest text-zinc-500 mt-1">{item.category}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">₹{Math.round(item.price * 80).toLocaleString("en-IN")}</p>
+                        <p className="text-[10px] text-zinc-500">per unit</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <label className="text-xs uppercase tracking-widest text-zinc-400">Qty</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.quantity}
+                        onChange={(e) => updateQuantity(item.id, Number(e.target.value))}
+                        className="w-20 border border-artistic-border bg-black px-3 py-2 text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.id)}
+                        className="text-xs uppercase tracking-widest text-artistic-accent hover:text-white"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={clearCart}
-            className="text-sm text-zinc-500 hover:text-artistic-accent transition-colors font-mono uppercase tracking-wider"
-          >
-            Clear Cart
-          </button>
-        </div>
-
-        {/* Order Summary */}
-        <div className="lg:col-span-1">
-          <div className="border border-artistic-border p-8 sticky top-32">
-            <h2 className="text-xl font-bold mb-8 uppercase tracking-tighter">ORDER SUMMARY</h2>
-
-            <div className="space-y-4 mb-8 border-b border-zinc-800 pb-8">
-              <div className="flex justify-between">
-                <span className="text-zinc-400">Items ({items.length})</span>
-                <span className="font-mono">₹{subtotalINR.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-400">Tax (18% GST)</span>
-                <span className="font-mono">₹{taxAmountINR.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-400">Shipping</span>
-                <span className="font-mono">{shippingCostINR === 0 ? 'FREE' : `₹${shippingCostINR.toLocaleString('en-IN')}`}</span>
-              </div>
+              ))}
             </div>
 
-            <div className="flex justify-between items-center mb-8">
-              <span className="font-bold uppercase">Total</span>
-              <span className="text-2xl font-bold accent-text">₹{finalTotalINR.toLocaleString('en-IN')}</span>
-            </div>
-
-            {shippingCostINR > 0 && (
-              <p className="text-xs text-zinc-500 mb-6 font-mono">
-                Add ₹{(1000 - subtotalINR).toLocaleString('en-IN')} more for free shipping
-              </p>
-            )}
-
-            <button
-              className="w-full bg-artistic-accent text-black font-bold py-4 uppercase text-sm tracking-widest hover:bg-white transition-colors mb-4"
-              onClick={handleRazorpayCheckout}
-            >
-              Proceed to Checkout
-            </button>
-
-            <Link
-              to="/shop"
-              className="block text-center text-sm text-zinc-500 hover:text-artistic-accent transition-colors font-mono uppercase tracking-wider"
-            >
-              Continue Shopping
-            </Link>
+            <aside className="border border-artistic-border bg-zinc-950/60 p-6 self-start">
+              <h2 className="text-lg font-semibold mb-4">Summary</h2>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span>Items</span>
+                  <span>{items.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t border-artistic-border pt-3">
+                  <span>Total</span>
+                  <span>₹{Math.round(total * 80).toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+              <div className="mt-6 space-y-3">
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  className="w-full border border-artistic-border px-4 py-3 text-xs uppercase tracking-widest hover:bg-zinc-900"
+                >
+                  Clear cart
+                </button>
+                <Link
+                  to="/shop"
+                  className="block text-center border border-artistic-border px-4 py-3 text-xs uppercase tracking-widest hover:bg-zinc-900"
+                >
+                  Continue shopping
+                </Link>
+              </div>
+            </aside>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
-
